@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard Admin - TechLend</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="bg-slate-50 min-h-screen">
+    <nav class="bg-slate-900 text-white p-4 sticky top-0 shadow-md z-50">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold">TechLend | Admin</h1>
+            <div class="space-x-4">
+                <a th:href="@{/admin/dashboard}" class="font-semibold underline">Dashboard</a>
+                <a th:href="@{/admin/usuarios}" class="hover:text-slate-300">Gestión Usuarios</a>
+                <a th:href="@{/logout}" class="hover:text-red-300">Salir</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mx-auto mt-8 p-4 space-y-8">
+        
+        <section class="scroll-hidden bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <h2 class="text-3xl font-bold text-slate-800 mb-2">Resumen de Operaciones</h2>
+            <p class="text-slate-500">Módulo OLAP de rotación y disponibilidad.</p>
+            
+            <!-- Aquí se inyecta el String 'reporte' devuelto por el backend GET /api/reportes/rotacion -->
+            <div class="mt-4 p-4 bg-indigo-50 border-l-4 border-indigo-600 text-indigo-900 rounded">
+                <p class="font-medium" th:text="${reporte}">Cargando reporte del sistema...</p>
+            </div>
+        </section>
+
+        <!-- Tarjetas de KPIs Generales -->
+        <section class="scroll-hidden grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div class="bg-white p-6 rounded-2xl shadow-md border-t-4 border-indigo-500">
+                <h3 class="text-slate-500 text-sm font-bold uppercase tracking-wider mb-2">Total Equipos</h3>
+                <p class="text-4xl font-extrabold text-slate-800">150</p>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-md border-t-4 border-teal-500">
+                <h3 class="text-slate-500 text-sm font-bold uppercase tracking-wider mb-2">En Préstamo (Hoy)</h3>
+                <p class="text-4xl font-extrabold text-slate-800">32</p>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-md border-t-4 border-green-500">
+                <h3 class="text-slate-500 text-sm font-bold uppercase tracking-wider mb-2">Disponibles</h3>
+                <p class="text-4xl font-extrabold text-slate-800">110</p>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-md border-t-4 border-red-500">
+                <h3 class="text-slate-500 text-sm font-bold uppercase tracking-wider mb-2">Sanciones Activas</h3>
+                <p class="text-4xl font-extrabold text-slate-800">8</p>
+            </div>
+        </section>
+
+    </main>
+    <script th:src="@{/js/scroll-animation.js}"></script>
+</body>
+</html>

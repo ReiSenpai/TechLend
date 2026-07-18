@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Devoluciones - TechLend</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="bg-slate-50 min-h-screen">
+    <nav class="bg-teal-600 text-white p-4 sticky top-0 shadow-md z-50">
+        <div class="container mx-auto flex justify-between">
+            <h1 class="text-xl font-bold">TechLend | Almacén</h1>
+            <div class="space-x-4">
+                <a th:href="@{/almacen/pendientes}" class="hover:text-teal-200">Pendientes</a>
+                <a th:href="@{/almacen/devoluciones}" class="font-semibold underline">Devoluciones</a>
+                <a th:href="@{/logout}" class="hover:text-red-300">Salir</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mx-auto mt-8 p-4">
+        <section class="scroll-hidden bg-white p-6 rounded-2xl shadow-md border border-slate-100">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-teal-800">Equipos en Préstamo</h2>
+                <p class="text-sm text-slate-500">Verifica retrasos o daños antes de confirmar (CUN-04)</p>
+            </div>
+
+            <table class="w-full text-left">
+                <thead class="bg-slate-100 text-slate-600 uppercase text-sm">
+                    <tr>
+                        <th class="p-4 border-b">ID Préstamo</th>
+                        <th class="p-4 border-b">Solicitante</th>
+                        <th class="p-4 border-b">Equipo</th>
+                        <th class="p-4 border-b">Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Solo mostrar préstamos cuyo estado actual es 'PRESTADO' -->
+                    <tr th:each="prestamo : ${prestamosActivos}" class="border-b hover:bg-slate-50">
+                        <td class="p-4 font-bold text-slate-700" th:text="${prestamo.id}">101</td>
+                        <td class="p-4 text-slate-600" th:text="${prestamo.solicitante.nombres}">María García</td>
+                        <td class="p-4 text-slate-600" th:text="${prestamo.equipo.codigoPatrimonial + ' - ' + prestamo.equipo.marcaModelo}">EQ-001 Proyector</td>
+                        <td class="p-4">
+                            <!-- Conecta con el endpoint PUT de devoluciones -->
+                            <form th:action="@{/almacen/{id}/devolucion(id=${prestamo.id})}" method="POST">
+                                <!-- Truco en Thymeleaf para enviar una petición PUT por formulario HTML -->
+                                <button type="submit" class="bg-slate-800 text-white font-bold px-4 py-2 rounded-lg hover:bg-slate-900 transition shadow-sm">
+                                    Registrar Devolución
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
+    <script th:src="@{/js/scroll-animation.js}"></script>
+</body>
+</html>
