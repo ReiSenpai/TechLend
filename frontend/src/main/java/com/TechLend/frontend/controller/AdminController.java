@@ -22,11 +22,16 @@ public class AdminController {
 
     @GetMapping("/dashboard")
     public String dashboard(Model model) {
-        // Consumimos GET /api/reportes/rotacion[cite: 2]
-        ResponseEntity<String> response = restTemplate.getForEntity(
-                BACKEND_URL + "/reportes/rotacion", String.class);
-        
-        model.addAttribute("reporte", response.getBody());
+        try {
+            // Consumimos GET /api/reportes/rotacion
+            ResponseEntity<String> response = restTemplate.getForEntity(
+                    BACKEND_URL + "/reportes/rotacion", String.class);
+            
+            model.addAttribute("reporte", response.getBody());
+        } catch (Exception e) {
+            // Evita el Error 500. Si el backend bloquea la petición, la vista carga sin colapsar.
+            model.addAttribute("error", "No se pudo cargar el reporte de rotación en este momento.");
+        }
         return "admin/dashboard";
     }
 
@@ -42,15 +47,21 @@ public class AdminController {
             @RequestParam String rol, 
             @RequestParam String password) {
         
-        Map<String, String> request = new HashMap<>();
-        request.put("nombres", nombres);
-        request.put("correoInstitucional", correo);
-        request.put("rol", rol);
-        request.put("password", password);
+        try {
+            Map<String, String> request = new HashMap<>();
+            request.put("nombres", nombres);
+            request.put("correoInstitucional", correo);
+            request.put("rol", rol);
+            request.put("password", password);
 
-        // Envía el usuario interno al backend
-        restTemplate.postForEntity(BACKEND_URL + "/auth/registro", request, String.class);
-        
-        return "redirect:/admin/usuarios?registro=exito";
+            // Envía el usuario interno al backend
+            restTemplate.postForEntity(BACKEND_URL + "/auth/registro", request, String.class);
+            
+            return "redirect:/admin/usuarios?registro=exito";
+            
+        } catch (Exception e) {
+            // Captura el error para que la página no lance un "Whitelabel Error"
+            return "redirect:/admin/usuarios?error=true";
+        }
     }
 }

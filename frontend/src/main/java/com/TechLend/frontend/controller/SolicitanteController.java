@@ -1,6 +1,7 @@
 package com.TechLend.frontend.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -23,34 +24,43 @@ public class SolicitanteController {
 
     @GetMapping("/dashboard")
     public String dashboard(Model model) {
-        // Consumimos el endpoint GET /api/equipos?estado=disponible
-        ResponseEntity<Object[]> response = restTemplate.getForEntity(
-                BACKEND_URL + "/equipos?estado=disponible", Object[].class);
-        
-        model.addAttribute("equipos", response.getBody());
+        try {
+            ResponseEntity<Object[]> response = restTemplate.getForEntity(
+                    BACKEND_URL + "/equipos?estado=disponible", Object[].class);
+            model.addAttribute("equipos", response.getBody());
+        } catch (Exception e) {
+            model.addAttribute("error", "No se pudo conectar con el servidor de inventario.");
+        }
         return "solicitante/dashboard";
     }
 
     @PostMapping("/prestamos")
-    public String registrarPrestamo(@RequestParam Long equipoId, @RequestParam String fechaSolicitud) {
-        // Consumimos el endpoint POST /api/prestamos
-        Map<String, Object> request = new HashMap<>();
-        request.put("equipoId", equipoId);
-        request.put("fechaSolicitud", LocalDateTime.parse(fechaSolicitud));
-        // Aquí idealmente enviarías el ID del usuario logueado en sesión
-        request.put("solicitanteId", 1L); 
-
-        restTemplate.postForEntity(BACKEND_URL + "/prestamos", request, String.class);
+    public String registrarPrestamo(
+            @RequestParam Long equipoId, 
+            @RequestParam("fechaSolicitud") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaSolicitud) {
         
-        return "redirect:/solicitante/dashboard?solicitud=enviada";
+        try {
+            Map<String, Object> request = new HashMap<>();
+            request.put("equipoId", equipoId);
+            request.put("fechaSolicitud", fechaSolicitud.toString());
+            request.put("solicitanteId", 1L); // ID estático temporal
+
+            restTemplate.postForEntity(BACKEND_URL + "/prestamos", request, String.class);
+            return "redirect:/solicitante/dashboard?solicitud=enviada";
+        } catch (Exception e) {
+            return "redirect:/solicitante/dashboard?error=true";
+        }
     }
     
     @GetMapping("/historial")
     public String historial(Model model) {
-        // Asumiendo que el ID del usuario en sesión es 1
-        ResponseEntity<Object[]> response = restTemplate.getForEntity(
-                BACKEND_URL + "/usuarios/1/historial", Object[].class); //[cite: 2]
-        model.addAttribute("historial", response.getBody());
+        try {
+            ResponseEntity<Object[]> response = restTemplate.getForEntity(
+                    BACKEND_URL + "/usuarios/1/historial", Object[].class);
+            model.addAttribute("historial", response.getBody());
+        } catch (Exception e) {
+            model.addAttribute("error", "Error al cargar el historial.");
+        }
         return "solicitante/historial";
     }
 }

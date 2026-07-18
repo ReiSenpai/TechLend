@@ -10,7 +10,11 @@
     <div class="scroll-animate bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-slate-100">
         <h2 class="text-3xl font-extrabold text-center text-indigo-900 mb-6">Crear Cuenta</h2>
         <p class="text-center text-slate-500 mb-6 text-sm">Regístrate para solicitar equipos tecnológicos.</p>
-        
+        <!-- Alerta de Error -->
+        <div th:if="${param.error}" class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert">
+            <p class="font-bold">Error de registro</p>
+            <p>El correo ingresado ya se encuentra registrado o los datos son inválidos.</p>
+        </div>
         <!-- Formulario conectado a POST /registro en AuthController -->
         <form th:action="@{/registro}" method="POST" class="space-y-4">
             <div>
