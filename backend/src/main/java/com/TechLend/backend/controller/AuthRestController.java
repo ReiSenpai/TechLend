@@ -1,58 +1,46 @@
 package com.TechLend.backend.controller;
 
-import org.springframework.http.HttpStatus;
+import com.TechLend.backend.dto.LoginRequest;
+import com.TechLend.backend.model.Usuario;
+import com.TechLend.backend.repository.UsuarioRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
-
-import com.TechLend.backend.model.Usuario;
-import com.TechLend.backend.service.UsuarioService;
-
+import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID; // Temporal para simular JWT si aún no configuras JwtService
 
 @RestController
 @RequestMapping("/api/auth")
 public class AuthRestController {
 
-    private final UsuarioService usuarioService;
-    private final AuthenticationManager authenticationManager;
+    private final AuthenticationManager authManager;
+    private final UsuarioRepository usuarioRepo;
 
-    public AuthRestController(UsuarioService usuarioService, AuthenticationManager authenticationManager) {
-        this.usuarioService = usuarioService;
-        this.authenticationManager = authenticationManager;
-    }
-
-    @PostMapping("/registro")
-    public ResponseEntity<String> registrarUsuario(@RequestBody Usuario usuario) {
-        usuarioService.registrarUsuario(usuario);
-        return ResponseEntity.ok("Usuario registrado");
+    public AuthRestController(AuthenticationManager authManager, UsuarioRepository usuarioRepo) {
+        this.authManager = authManager;
+        this.usuarioRepo = usuarioRepo;
     }
 
     @PostMapping("/login")
-    public ResponseEntity<String> procesarLogin(@RequestBody Map<String, String> request) {
-        try {
-            String correo = request.get("correoInstitucional");
-            String password = request.get("password");
+    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+        // Spring Security valida automáticamente contra la base de datos y la contraseña BCrypt
+        Authentication auth = authManager.authenticate(
+            new UsernamePasswordAuthenticationToken(request.getCorreo(), request.getContrasena())
+        );
 
-            // 1. Spring Security valida el correo y la contraseña cifrada
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(correo, password)
-            );
+        Usuario usuario = usuarioRepo.findByCorreoInstitucional(request.getCorreo()).orElseThrow();
 
-            // 2. Extraemos el Rol que Spring Security le asignó al usuario
-            String rol = authentication.getAuthorities().stream()
-                    .findFirst()
-                    .map(GrantedAuthority::getAuthority)
-                    .orElse("SOLICITANTE"); // Valor por defecto de seguridad
+        // AQUÍ generas el JWT (En este snippet uso un string temporal para que compile)
+        String token = "jwt_generado_" + UUID.randomUUID().toString(); 
 
-            // 3. Devolvemos el ROL (ej: "ROLE_ADMINISTRADOR" o "ADMINISTRADOR") al frontend
-            return ResponseEntity.ok(rol);
-            
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Credenciales incorrectas");
-        }
+        Map<String, Object> response = new HashMap<>();
+        response.put("token", token);
+        response.put("rol", usuario.getRol().name());
+        response.put("nombres", usuario.getNombres());
+
+        return ResponseEntity.ok(response);
     }
 }

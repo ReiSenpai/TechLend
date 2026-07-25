@@ -28,11 +28,14 @@ public class BackendApplication {
                 admin.setNombres("Administrador del Sistema");
                 admin.setCorreoInstitucional("admin@utp.edu.pe");
                 
-                // Aquí el PasswordEncoder hace el trabajo sucio por nosotros
-                admin.setPassword(passwordEncoder.encode("admin123")); 
+                // CORRECCIÓN 1: Usar setContrasena() en lugar de setPassword()
+                admin.setContrasena(passwordEncoder.encode("admin123")); 
                 
-                admin.setRol(RolUsuario.ADMINISTRADOR); //[cite: 1]
-                admin.setActivo(true);
+                // CORRECCIÓN 2: Coincidir con el Enum definido (Administrador)
+                admin.setRol(RolUsuario.Administrador); 
+                
+                // CORRECCIÓN 3: Usar setEstado() en lugar de setActivo()
+                admin.setEstado("Activo");
                 
                 usuarioRepository.save(admin);
                 System.out.println("✅ Cuenta de Administrador generada exitosamente en la BD.");

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SGIE - Reportes OLAP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { utpRed: '#8b0000', bgMain: '#F4F4F6' } } }
+        }
+    </script>
+    <style>body { font-family: 'Inter', sans-serif; }</style>
+</head>
+<body class="flex h-screen bg-bgMain text-gray-800 overflow-hidden">
+
+    <!-- Sidebar Admin -->
+    <nav class="w-52 xl:w-56 bg-white border-r border-gray-200 flex-shrink-0 p-4 flex flex-col">
+        <div class="flex items-center gap-2 mb-8 px-2">
+            <div class="w-7 h-7 bg-utpRed rounded-md flex items-center justify-center"><span class="text-white font-bold text-xs">::</span></div>
+            <span class="font-bold text-gray-900 text-sm">SGIE Admin</span>
+        </div>
+        <div class="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-3 px-3">Módulos</div>
+        
+        <a href="admin-inventario.html" class="w-full flex items-start gap-3 px-3 py-2.5 rounded-xl transition-colors mb-1 text-left text-gray-600 hover:bg-gray-100">
+            <span class="mt-0.5 text-gray-400">📦</span>
+            <div><div class="text-xs font-semibold">Inventario</div></div>
+        </a>
+        <a href="#" class="w-full flex items-start gap-3 px-3 py-2.5 rounded-xl transition-colors mb-1 text-left text-gray-600 hover:bg-gray-100">
+            <span class="mt-0.5 text-gray-400">⚠️</span>
+            <div><div class="text-xs font-semibold">Sanciones</div></div>
+        </a>
+        <a href="admin-reportes.html" class="w-full flex items-start gap-3 px-3 py-2.5 rounded-xl transition-colors mb-1 text-left bg-utpRed text-white">
+            <span class="mt-0.5">📊</span>
+            <div><div class="text-xs font-semibold">Reportes OLAP</div><div class="text-[10px] text-red-200 mt-0.5">Indicadores en tiempo real</div></div>
+        </a>
+    </nav>
+
+    <!-- Contenido -->
+    <div class="flex-1 flex flex-col min-h-0 overflow-hidden">
+        <header class="h-14 bg-white border-b border-gray-200 flex items-center px-6 justify-end flex-shrink-0">
+            <div class="flex items-center gap-2">
+                <div class="w-7 h-7 bg-utpRed rounded-full flex items-center justify-center text-white text-[10px] font-bold">AD</div>
+                <span class="text-xs font-semibold text-gray-800" id="user-name">Administrador</span>
+                <button onclick="logout()" class="ml-4 text-xs text-gray-400 hover:text-gray-700 font-bold">Salir</button>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-auto p-6">
+            <div class="mb-6">
+                <h1 class="text-xl font-bold text-gray-900">Reportes OLAP</h1>
+                <p class="text-sm text-gray-500 mt-0.5">Indicadores de rotación, disponibilidad y estadísticas de uso calculados en tiempo real.</p>
+            </div>
+
+            <!-- 4 KPIs OLAP Dinámicos -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+                <div class="bg-red-50 rounded-2xl p-4 border border-red-100">
+                    <div class="text-3xl font-bold tabular-nums text-utpRed" id="kpi-rotacion">0.0×</div>
+                    <div class="text-xs font-semibold text-gray-700 mt-1.5">Rotación de inventario</div>
+                    <div class="text-[10px] text-gray-500">Préstamos / Total equipos</div>
+                </div>
+                <div class="bg-emerald-50 rounded-2xl p-4 border border-emerald-100">
+                    <div class="text-3xl font-bold tabular-nums text-emerald-600" id="kpi-disponibilidad">0%</div>
+                    <div class="text-xs font-semibold text-gray-700 mt-1.5">Disponibilidad actual</div>
+                    <div class="text-[10px] text-gray-500">Equipos listos para uso</div>
+                </div>
+                <div class="bg-amber-50 rounded-2xl p-4 border border-amber-100">
+                    <div class="text-3xl font-bold tabular-nums text-amber-600" id="kpi-prestamos">0</div>
+                    <div class="text-xs font-semibold text-gray-700 mt-1.5">Préstamos Históricos</div>
+                    <div class="text-[10px] text-gray-500">Registrados en la BD</div>
+                </div>
+                <div class="bg-blue-50 rounded-2xl p-4 border border-blue-100">
+                    <div class="text-3xl font-bold tabular-nums text-blue-600" id="kpi-activos">0</div>
+                    <div class="text-xs font-semibold text-gray-700 mt-1.5">Préstamos Activos</div>
+                    <div class="text-[10px] text-gray-500">Sin devolver aún</div>
+                </div>
+            </div>
+
+            <!-- Gráficos Dinámicos -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
+                
+                <!-- Gráfico: Equipos más solicitados -->
+                <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+                    <div class="flex items-center justify-between mb-5">
+                        <div>
+                            <h3 class="font-semibold text-gray-900 text-sm">Disponibilidad por Categoría</h3>
+                            <p class="text-xs text-gray-400 mt-0.5">Tiempo real</p>
+                        </div>
+                    </div>
+                    <div class="space-y-3.5" id="contenedor-categorias">
+                        <div class="text-xs text-gray-400">Cargando métricas...</div>
+                    </div>
+                </div>
+
+                <!-- Gráfico: Estado General del Inventario -->
+                <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+                    <div class="mb-5">
+                        <h3 class="font-semibold text-gray-900 text-sm">Estado General del Inventario</h3>
+                        <p class="text-xs text-gray-400 mt-0.5">Distribución porcentual</p>
+                    </div>
+                    <div class="space-y-3.5" id="contenedor-estados">
+                        <div class="text-xs text-gray-400">Cargando métricas...</div>
+                    </div>
+                </div>
+                
+            </div>
+            
+        </main>
+    </div>
+
+    <!-- Script de Conexión -->
+    <script src="js/api.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const nombre = localStorage.getItem('nombres');
+            if(nombre) document.getElementById('user-name').textContent = nombre.split(' ')[0];
+            cargarReportes();
+        });
+
+        async function cargarReportes() {
+            try {
+                // Descargamos datos de ambos endpoints en paralelo para que sea rápido
+                const [equipos, prestamos] = await Promise.all([
+                    apiFetch('/equipos'),
+                    apiFetch('/prestamos/activos')
+                ]);
+
+                if (!equipos || !prestamos) return;
+
+                const totalEquipos = equipos.length;
+                const totalPrestamos = prestamos.length;
+
+                // 1. CÁLCULO DE KPIs SUPERIORES
+                const disponibles = equipos.filter(e => e.estadoActual === 'Disponible').length;
+                const prestamosActivos = prestamos.filter(p => p.estado === 'Aprobado' || p.estado === 'Entregado').length;
+                
+                // Rotación: Cuántas veces se presta el inventario en promedio
+                const rotacion = totalEquipos > 0 ? (totalPrestamos / totalEquipos).toFixed(1) : 0;
+                // % Disponibilidad
+                const pctDisponibilidad = totalEquipos > 0 ? Math.round((disponibles / totalEquipos) * 100) : 0;
+
+                document.getElementById('kpi-rotacion').textContent = `${rotacion}×`;
+                document.getElementById('kpi-disponibilidad').textContent = `${pctDisponibilidad}%`;
+                document.getElementById('kpi-prestamos').textContent = totalPrestamos;
+                document.getElementById('kpi-activos').textContent = prestamosActivos;
+
+                // 2. CÁLCULO PARA EL GRÁFICO DE CATEGORÍAS
+                const metricasCategorias = {};
+                equipos.forEach(eq => {
+                    const catNombre = eq.categoria ? eq.categoria.nombre : 'Sin Categoría';
+                    if (!metricasCategorias[catNombre]) {
+                        metricasCategorias[catNombre] = { total: 0, disponibles: 0 };
+                    }
+                    metricasCategorias[catNombre].total += 1;
+                    if (eq.estadoActual === 'Disponible') {
+                        metricasCategorias[catNombre].disponibles += 1;
+                    }
+                });
+
+                const contCat = document.getElementById('contenedor-categorias');
+                if (Object.keys(metricasCategorias).length === 0) {
+                    contCat.innerHTML = '<div class="text-xs text-gray-400">No hay categorías registradas.</div>';
+                } else {
+                    contCat.innerHTML = Object.entries(metricasCategorias).map(([nombreCat, datos]) => {
+                        const porcentaje = Math.round((datos.disponibles / datos.total) * 100) || 0;
+                        // Cambiamos el color de la barra según si hay poca disponibilidad
+                        const colorBarra = porcentaje < 30 ? 'bg-red-500' : (porcentaje < 70 ? 'bg-amber-400' : 'bg-emerald-500');
+                        
+                        return `
+                        <div class="flex items-center gap-3">
+                            <div class="w-28 text-xs text-gray-600 font-medium truncate">${nombreCat}</div>
+                            <div class="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                                <div class="h-full ${colorBarra} rounded-full transition-all duration-1000" style="width: ${porcentaje}%;"></div>
+                            </div>
+                            <div class="text-xs text-gray-500 w-12 text-right tabular-nums font-medium">${datos.disponibles}/${datos.total}</div>
+                        </div>`;
+                    }).join('');
+                }
+
+                // 3. CÁLCULO PARA EL GRÁFICO DE ESTADOS
+                const metricasEstados = {
+                    'Disponible': { count: 0, color: 'bg-emerald-500' },
+                    'Prestado': { count: 0, color: 'bg-blue-500' },
+                    'En mantenimiento': { count: 0, color: 'bg-amber-500' },
+                    'De baja': { count: 0, color: 'bg-red-500' }
+                };
+
+                equipos.forEach(eq => {
+                    const estado = eq.estadoActual;
+                    if(metricasEstados[estado] !== undefined) {
+                        metricasEstados[estado].count += 1;
+                    }
+                });
+
+                const contEst = document.getElementById('contenedor-estados');
+                contEst.innerHTML = Object.entries(metricasEstados).map(([estado, info]) => {
+                    const porcentaje = totalEquipos > 0 ? Math.round((info.count / totalEquipos) * 100) : 0;
+                    return `
+                    <div>
+                        <div class="flex justify-between text-xs mb-1.5">
+                            <span class="text-gray-600 font-medium">${estado}</span>
+                            <span class="text-gray-900 font-semibold tabular-nums">${info.count} eq. (${porcentaje}%)</span>
+                        </div>
+                        <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+                            <div class="h-full ${info.color} rounded-full transition-all duration-1000" style="width: ${porcentaje}%;"></div>
+                        </div>
+                    </div>`;
+                }).join('');
+
+            } catch (error) {
+                console.error("Error al cargar reportes:", error);
+            }
+        }
+
+        function logout() { 
+            localStorage.clear(); 
+            window.location.href = 'index.html'; 
+        }
+    </script>
+</body>
+</html>

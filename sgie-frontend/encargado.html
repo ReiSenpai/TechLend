@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SGIE - Panel Encargado</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = { theme: { extend: { colors: { utpRed: '#8b0000', bgMain: '#F4F4F6' } } } }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+    </style>
+</head>
+<body class="bg-bgMain text-gray-800 h-screen flex flex-col">
+
+    <!-- Navbar -->
+    <header class="h-14 bg-white border-b border-gray-200 flex items-center px-5 justify-between flex-shrink-0">
+        <div class="flex items-center gap-2">
+            <div class="w-7 h-7 bg-utpRed rounded-md flex items-center justify-center">
+                <span class="text-white font-bold text-xs">::</span>
+            </div>
+            <span class="font-bold text-gray-900 text-sm">SGIE Encargado</span>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2 pl-3 border-l border-gray-200">
+                <div class="w-7 h-7 bg-utpRed rounded-full flex items-center justify-center text-white text-[10px] font-bold">RM</div>
+                <div>
+                    <div class="text-xs font-semibold text-gray-800" id="user-name">Tec. Rosa Mendoza</div>
+                    <div class="text-[10px] text-gray-400">Enc. Almacén</div>
+                </div>
+            </div>
+            <button onclick="logout()" class="text-xs text-gray-400 hover:text-gray-700 font-bold">Salir</button>
+        </div>
+    </header>
+
+    <main class="flex-1 overflow-auto p-6 max-w-5xl mx-auto w-full">
+        <div class="mb-6">
+            <h1 class="text-xl font-bold text-gray-900">Panel del Encargado</h1>
+            <p class="text-sm text-gray-500 mt-0.5">Aprobación, entregas y devoluciones de equipos</p>
+        </div>
+
+        <!-- KPIs / Navegación de Tabs -->
+        <div class="grid grid-cols-3 gap-4 mb-6">
+            <button onclick="switchTab('pendientes')" id="btn-pendientes" class="bg-amber-50 rounded-2xl p-5 text-left transition-all ring-2 ring-amber-200">
+                <div class="text-3xl font-bold text-amber-600">0</div>
+                <div class="text-xs text-gray-600 mt-1.5 font-medium">Pendientes de aprobación</div>
+            </button>
+            <button onclick="switchTab('entrega')" id="btn-entrega" class="bg-blue-50 rounded-2xl p-5 text-left transition-all opacity-70 hover:opacity-100">
+                <div class="text-3xl font-bold text-blue-600">0</div>
+                <div class="text-xs text-gray-600 mt-1.5 font-medium">Por entregar (aprobadas)</div>
+            </button>
+            <button onclick="switchTab('devolucion')" id="btn-devolucion" class="bg-emerald-50 rounded-2xl p-5 text-left transition-all opacity-70 hover:opacity-100">
+                <div class="text-3xl font-bold text-emerald-600">0</div>
+                <div class="text-xs text-gray-600 mt-1.5 font-medium">Por devolver (en campo)</div>
+            </button>
+        </div>
+
+        <!-- CONTENIDO PESTAÑAS -->
+
+        <!-- Tab 1: Pendientes -->
+        <div id="tab-pendientes" class="tab-content active bg-white rounded-2xl border border-gray-100 overflow-hidden">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b bg-gray-50/50">
+                        <th class="text-left px-4 py-3 text-[10px] font-semibold text-gray-400 uppercase">ID</th>
+                        <th class="text-left px-4 py-3 text-[10px] font-semibold text-gray-400 uppercase">Equipo</th>
+                        <th class="text-left px-4 py-3 text-[10px] font-semibold text-gray-400 uppercase">Solicitante</th>
+                        <th class="text-left px-4 py-3 text-[10px] font-semibold text-gray-400 uppercase">Motivo</th>
+                        <th class="text-left px-4 py-3 text-[10px] font-semibold text-gray-400 uppercase">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="body-pendientes">
+                    <tr><td colspan="5" class="px-4 py-8 text-center text-gray-400">Cargando datos...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Tab 2: Check-out Entrega -->
+        <div id="tab-entrega" class="tab-content">
+            <div id="body-entrega"></div>
+        </div>
+
+        <!-- Tab 3: Check-in Devolución -->
+        <div id="tab-devolucion" class="tab-content">
+            <div id="body-devolucion"></div>
+        </div>
+    </main>
+
+    <!-- Script de conexión (Asegúrate de que la ruta del script sea correcta) -->
+    <script src="js/api.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Ya no sobreescribimos user-name si tu UI usa 'Tec. Rosa Mendoza' por defecto, 
+            // pero api.js lo hace automáticamente en su bloque DOMContentLoaded.
+            cargarSolicitudes();
+        });
+
+        // 1. Obtener datos del Backend
+        async function cargarSolicitudes() {
+            try {
+                // api.js ya le pone /api, así que esto apunta a http://localhost:8090/api/prestamos/activos
+                const prestamos = await apiFetch('/prestamos/activos');
+                if (!prestamos) return;
+
+                const pendientes = prestamos.filter(p => p.estado === 'Pendiente');
+                const aprobados = prestamos.filter(p => p.estado === 'Aprobado');
+                const entregados = prestamos.filter(p => p.estado === 'Entregado');
+
+                document.querySelector('#btn-pendientes div:first-child').textContent = pendientes.length;
+                document.querySelector('#btn-entrega div:first-child').textContent = aprobados.length;
+                document.querySelector('#btn-devolucion div:first-child').textContent = entregados.length;
+
+                renderPendientes(pendientes);
+                renderEntrega(aprobados);
+                renderDevolucion(entregados);
+            } catch (error) {
+                console.error("Error al obtener solicitudes:", error);
+            }
+        }
+
+        // 2. Ejecutar Acciones (Aprobar/Entregar/Devolver)
+        async function actualizarEstado(id, accion) {
+            const confirmaciones = {
+                'aprobar': '¿Aprobar esta solicitud?',
+                'rechazar': '¿Rechazar esta solicitud?',
+                'entrega': '¿Confirmar la entrega física del equipo?',
+                'devolucion': '¿Confirmar que el equipo regresó al inventario?'
+            };
+
+            if (!confirm(confirmaciones[accion])) return;
+
+            try {
+                // CORRECCIÓN 1: Se quitó el /api/ extra del endpoint.
+                await apiFetch(`/prestamos/${id}/${accion}`, { method: 'PUT' });
+                
+                alert('Operación exitosa');
+                cargarSolicitudes(); 
+                
+                // Redirigir a la pestaña lógica siguiente
+                if (accion === 'aprobar') switchTab('entrega');
+                if (accion === 'entrega') switchTab('devolucion');
+                if (accion === 'devolucion') switchTab('pendientes');
+
+            } catch (error) {
+                // CORRECCIÓN 2: Si el backend hizo el cambio pero falló el parseo de JSON (por el body vacío)
+                if (error.message.includes("JSON") || error.message.includes("Unexpected end of JSON")) {
+                    alert('Operación exitosa');
+                    cargarSolicitudes();
+                    if (accion === 'aprobar') switchTab('entrega');
+                    if (accion === 'entrega') switchTab('devolucion');
+                    if (accion === 'devolucion') switchTab('pendientes');
+                } else {
+                    alert('Hubo un error: ' + error.message);
+                }
+            }
+        }
+
+        // 3. Funciones de Interfaz (Renderizado)
+        function renderPendientes(pendientes) {
+            const tbody = document.getElementById('body-pendientes');
+            if (pendientes.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-8 text-center text-gray-400">No hay solicitudes pendientes</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = pendientes.map(p => `
+                <tr class="border-b border-gray-50 hover:bg-gray-50/50">
+                    <td class="px-4 py-4 font-mono text-xs text-gray-400">SOL-${p.id}</td>
+                    <td class="px-4 py-4">
+                        <div class="font-medium text-xs">${p.equipo.marcaModelo}</div>
+                        <div class="text-[10px] text-gray-400 font-mono">${p.equipo.codigoPatrimonial}</div>
+                    </td>
+                    <td class="px-4 py-4 text-xs text-gray-700">${p.usuario ? p.usuario.nombres : 'Usuario'}</td>
+                    <td class="px-4 py-4 text-xs text-gray-500 max-w-[200px]">${p.motivo || 'No especificado'}</td>
+                    <td class="px-4 py-4 flex gap-2">
+                        <button onclick="actualizarEstado(${p.id}, 'aprobar')" class="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-semibold">Aprobar</button>
+                        <button onclick="actualizarEstado(${p.id}, 'rechazar')" class="px-3 py-1.5 bg-red-50 text-red-700 border border-red-200 rounded-lg text-xs font-semibold">Rechazar</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderEntrega(aprobados) {
+            const contenedor = document.getElementById('body-entrega');
+            if (aprobados.length === 0) {
+                contenedor.innerHTML = `<div class="bg-white rounded-2xl border border-gray-100 p-8 text-center text-gray-400">No hay equipos por entregar</div>`;
+                return;
+            }
+            contenedor.innerHTML = aprobados.map(p => crearTarjetaCheck(p, 'Confirmar Entrega', 'entrega', 'bg-utpRed')).join('');
+        }
+
+        function renderDevolucion(entregados) {
+            const contenedor = document.getElementById('body-devolucion');
+            if (entregados.length === 0) {
+                contenedor.innerHTML = `<div class="bg-white rounded-2xl border border-gray-100 p-8 text-center text-gray-400">No hay equipos en campo</div>`;
+                return;
+            }
+            contenedor.innerHTML = entregados.map(p => crearTarjetaCheck(p, 'Registrar Devolución', 'devolucion', 'bg-emerald-600')).join('');
+        }
+
+        function crearTarjetaCheck(p, botonTexto, accion, colorBoton) {
+            return `
+            <div class="bg-white rounded-2xl border border-gray-100 p-5 mb-4 shadow-sm">
+                <div class="flex items-center gap-4 mb-4 pb-4 border-b border-gray-100">
+                    <div class="flex-1">
+                        <div class="font-bold text-gray-900 text-base">${p.equipo.marcaModelo} <span class="font-mono text-xs text-gray-400 ml-2">${p.equipo.codigoPatrimonial}</span></div>
+                        <div class="text-sm text-gray-600 mt-1 font-medium">Asignado a: ${p.usuario ? p.usuario.nombres : ''} · SOL-${p.id}</div>
+                    </div>
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-3">Checklist del equipo</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
+                        <label class="flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" checked class="accent-utpRed w-4 h-4"> Estado óptimo verificado</label>
+                        <label class="flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" checked class="accent-utpRed w-4 h-4"> Accesorios completos</label>
+                    </div>
+                    <button onclick="actualizarEstado(${p.id}, '${accion}')" class="px-6 py-3 ${colorBoton} hover:opacity-90 transition-opacity text-white text-sm font-semibold rounded-xl">
+                        ${botonTexto}
+                    </button>
+                </div>
+            </div>`;
+        }
+
+        // Lógica de Pestañas
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('button[id^="btn-"]').forEach(el => {
+                el.classList.remove('ring-2', 'ring-amber-200', 'ring-blue-200', 'ring-emerald-200');
+                el.classList.add('opacity-70');
+            });
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+            
+            const activeBtn = document.getElementById(`btn-${tabId}`);
+            activeBtn.classList.remove('opacity-70');
+            if (tabId === 'pendientes') activeBtn.classList.add('ring-2', 'ring-amber-200');
+            if (tabId === 'entrega') activeBtn.classList.add('ring-2', 'ring-blue-200');
+            if (tabId === 'devolucion') activeBtn.classList.add('ring-2', 'ring-emerald-200');
+        }
+    </script>
+</body>
+</html>

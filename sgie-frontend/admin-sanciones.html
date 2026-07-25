@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SGIE - Sanciones</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { utpRed: '#8b0000', bgMain: '#F4F4F6' } } }
+        }
+    </script>
+    <style>body { font-family: 'Inter', sans-serif; }</style>
+</head>
+<body class="flex h-screen bg-bgMain text-gray-800 overflow-hidden">
+
+    <!-- Sidebar Admin -->
+    <nav class="w-52 xl:w-56 bg-white border-r border-gray-200 flex-shrink-0 p-4 flex flex-col">
+        <div class="flex items-center gap-2 mb-8 px-2">
+            <div class="w-7 h-7 bg-utpRed rounded-md flex items-center justify-center"><span class="text-white font-bold text-xs">::</span></div>
+            <span class="font-bold text-gray-900 text-sm">SGIE Admin</span>
+        </div>
+        <div class="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-3 px-3">Módulos</div>
+        
+        <a href="admin-inventario.html" class="w-full flex items-start gap-3 px-3 py-2.5 rounded-xl transition-colors mb-1 text-left text-gray-600 hover:bg-gray-100">
+            <span class="mt-0.5 text-gray-400">📦</span>
+            <div><div class="text-xs font-semibold">Inventario</div><div class="text-[10px] text-gray-400 mt-0.5">Gestión de equipos</div></div>
+        </a>
+        
+        <a href="admin-sanciones.html" class="w-full flex items-start gap-3 px-3 py-2.5 rounded-xl transition-colors mb-1 text-left bg-utpRed text-white">
+            <span class="mt-0.5">⚠️</span>
+            <div><div class="text-xs font-semibold">Sanciones</div><div class="text-[10px] text-red-200 mt-0.5" id="sidebar-sanciones">0 activas</div></div>
+        </a>
+        
+        <a href="admin-reportes.html" class="w-full flex items-start gap-3 px-3 py-2.5 rounded-xl transition-colors mb-1 text-left text-gray-600 hover:bg-gray-100">
+            <span class="mt-0.5 text-gray-400">📊</span>
+            <div><div class="text-xs font-semibold">Reportes OLAP</div><div class="text-[10px] text-gray-400 mt-0.5">Indicadores en tiempo real</div></div>
+        </a>
+    </nav>
+
+    <!-- Contenido -->
+    <div class="flex-1 flex flex-col min-h-0 overflow-hidden">
+        <header class="h-14 bg-white border-b border-gray-200 flex items-center px-6 justify-end flex-shrink-0">
+            <div class="flex items-center gap-2">
+                <div class="w-7 h-7 bg-utpRed rounded-full flex items-center justify-center text-white text-[10px] font-bold">AD</div>
+                <span class="text-xs font-semibold text-gray-800" id="user-name">Administrador</span>
+                <button onclick="logout()" class="ml-4 text-xs text-gray-400 hover:text-gray-700">Salir</button>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-auto p-6">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h1 class="text-xl font-bold text-gray-900">Registro de Sanciones</h1>
+                    <p class="text-sm text-gray-500 mt-0.5">Penalidades por retraso, daño o pérdida de equipos</p>
+                </div>
+                <button onclick="abrirModalSancion()" class="px-4 py-2 bg-utpRed text-white text-sm font-semibold rounded-xl hover:bg-[#6e0000] transition-colors">+ Nueva sanción</button>
+            </div>
+
+            <!-- KPIs Sanciones -->
+            <div class="grid grid-cols-3 gap-4 mb-5">
+                <div class="bg-red-50 rounded-2xl p-5 border border-red-100">
+                    <div class="text-2xl font-bold tabular-nums text-red-600" id="kpi-activas">0</div>
+                    <div class="text-xs text-gray-600 mt-1 font-medium">Sanciones activas</div>
+                </div>
+                <div class="bg-orange-50 rounded-2xl p-5 border border-orange-100">
+                    <div class="text-2xl font-bold tabular-nums text-orange-600" id="kpi-monto">S/ 0.00</div>
+                    <div class="text-xs text-gray-600 mt-1 font-medium">Total penalidad activa</div>
+                </div>
+                <div class="bg-emerald-50 rounded-2xl p-5 border border-emerald-100">
+                    <div class="text-2xl font-bold tabular-nums text-emerald-600" id="kpi-resueltas">0</div>
+                    <div class="text-xs text-gray-600 mt-1 font-medium">Resueltas históricamente</div>
+                </div>
+            </div>
+
+            <!-- Tabla -->
+            <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm min-w-[720px]">
+                        <thead>
+                            <tr class="border-b border-gray-100 bg-gray-50/50">
+                                <th class="text-left px-4 py-3 text-[10px] font-semibold text-gray-400 uppercase tracking-widest whitespace-nowrap">Código</th>
+                                <th class="text-left px-4 py-3 text-[10px] font-semibold text-gray-400 uppercase tracking-widest whitespace-nowrap">Motivo</th>
+                                <th class="text-left px-4 py-3 text-[10px] font-semibold text-gray-400 uppercase tracking-widest whitespace-nowrap">Monto</th>
+                                <th class="text-left px-4 py-3 text-[10px] font-semibold text-gray-400 uppercase tracking-widest whitespace-nowrap">Suspensión</th>
+                                <th class="text-left px-4 py-3 text-[10px] font-semibold text-gray-400 uppercase tracking-widest whitespace-nowrap">Estado</th>
+                                <th class="text-left px-4 py-3 text-[10px] font-semibold text-gray-400 uppercase tracking-widest whitespace-nowrap">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-sanciones">
+                            <tr><td colspan="6" class="px-4 py-8 text-center text-gray-400">Cargando sanciones...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal: Registrar Sanción -->
+    <div id="modal-sancion" class="fixed inset-0 bg-gray-900/50 hidden flex items-center justify-center z-50">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                <h3 class="font-bold text-gray-900">Registrar Nueva Sanción</h3>
+                <button onclick="cerrarModalSancion()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
+            </div>
+            
+            <form id="form-sancion" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Motivo de la Sanción</label>
+                    <input type="text" id="motivo" required placeholder="Ej: Retraso en devolución" class="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#8B0000]">
+                </div>
+                <div class="flex gap-4">
+                    <div class="flex-1">
+                        <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Monto (S/)</label>
+                        <input type="number" step="0.01" id="monto" value="0.00" class="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#8B0000]">
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Días Suspensión</label>
+                        <input type="number" id="diasSuspension" value="0" class="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#8B0000]">
+                    </div>
+                </div>
+                
+                <div class="pt-4 flex justify-end gap-3">
+                    <button type="button" onclick="cerrarModalSancion()" class="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-utpRed rounded-lg hover:bg-[#6e0000]">Guardar Sanción</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts Esenciales -->
+    <script src="js/api.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const nombre = localStorage.getItem('nombres');
+            if(nombre) document.getElementById('user-name').textContent = nombre.split(' ')[0];
+            cargarSanciones();
+        });
+
+        // 1. Cargar y renderizar Sanciones
+        async function cargarSanciones() {
+            try {
+                const sanciones = await apiFetch('/sanciones');
+                const tbody = document.getElementById('tabla-sanciones');
+                
+                if (!sanciones || sanciones.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-gray-400">No hay sanciones registradas en el sistema.</td></tr>`;
+                    document.getElementById('kpi-activas').textContent = 0;
+                    document.getElementById('kpi-monto').textContent = 'S/ 0.00';
+                    document.getElementById('kpi-resueltas').textContent = 0;
+                    return;
+                }
+
+                // Cálculos para los KPIs
+                const activas = sanciones.filter(s => s.estado !== 'Pagado' && s.estado !== 'Resuelta');
+                const resueltas = sanciones.filter(s => s.estado === 'Pagado' || s.estado === 'Resuelta');
+                const totalMontoActivo = activas.reduce((sum, s) => sum + (s.monto || 0), 0);
+
+                document.getElementById('kpi-activas').textContent = activas.length;
+                document.getElementById('sidebar-sanciones').textContent = `${activas.length} activas`;
+                document.getElementById('kpi-monto').textContent = `S/ ${totalMontoActivo.toFixed(2)}`;
+                document.getElementById('kpi-resueltas').textContent = resueltas.length;
+
+                // Renderizar la tabla
+                tbody.innerHTML = sanciones.map(s => {
+                    const esActiva = (s.estado !== 'Pagado' && s.estado !== 'Resuelta');
+                    const badgeClass = esActiva ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700';
+                    
+                    return `
+                        <tr class="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                            <td class="px-4 py-4 font-mono text-xs text-gray-400">${s.codigoSancion || `SAN-${s.id}`}</td>
+                            <td class="px-4 py-4 text-xs text-gray-600 max-w-[200px]">${s.motivo}</td>
+                            <td class="px-4 py-4 text-xs font-bold text-gray-900 tabular-nums">S/ ${(s.monto || 0).toFixed(2)}</td>
+                            <td class="px-4 py-4 text-xs text-gray-600">${s.diasSuspension || 0} días</td>
+                            <td class="px-4 py-4">
+                                <span class="text-xs font-semibold px-2.5 py-1 rounded-full ${badgeClass}">${s.estado}</span>
+                            </td>
+                            <td class="px-4 py-4">
+                                ${esActiva ? `<button onclick="marcarPagado(${s.id})" class="text-xs text-emerald-600 font-medium hover:underline">Marcar Pagado</button>` : '<span class="text-xs text-gray-400">Resuelto</span>'}
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+            } catch (error) {
+                console.error("Error cargando sanciones:", error);
+            }
+        }
+
+        // 2. Controladores del Modal
+        function abrirModalSancion() { 
+            document.getElementById('form-sancion').reset();
+            document.getElementById('modal-sancion').classList.remove('hidden'); 
+        }
+        function cerrarModalSancion() { 
+            document.getElementById('modal-sancion').classList.add('hidden'); 
+        }
+
+        // 3. Crear Nueva Sanción (POST)
+        document.getElementById('form-sancion').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const nuevaSancion = {
+                motivo: document.getElementById('motivo').value,
+                monto: parseFloat(document.getElementById('monto').value) || 0,
+                diasSuspension: parseInt(document.getElementById('diasSuspension').value) || 0,
+                estado: "Activa"
+            };
+
+            try {
+                await apiFetch('/sanciones', {
+                    method: 'POST',
+                    body: JSON.stringify(nuevaSancion)
+                });
+                
+                alert('¡Sanción registrada exitosamente!');
+                cerrarModalSancion();
+                cargarSanciones(); // Recarga la tabla y los KPIs
+            } catch (error) {
+                alert('Error al registrar sanción: ' + error.message);
+            }
+        });
+
+        // 4. Cambiar estado a Pagado (PUT)
+        async function marcarPagado(id) {
+            if(!confirm('¿Confirmar que la sanción ha sido pagada o cumplida?')) return;
+            try {
+                // Se asume que el backend actualiza el estado a "Pagado"
+                await apiFetch(`/sanciones/${id}/pagado`, { method: 'PUT' });
+                cargarSanciones();
+            } catch (error) { 
+                alert('Error al actualizar sanción: ' + error.message); 
+            }
+        }
+
+        function logout() { localStorage.clear(); window.location.href = 'index.html'; }
+    </script>
+</body>
+</html>

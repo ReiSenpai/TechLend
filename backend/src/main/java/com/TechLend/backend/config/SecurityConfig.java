@@ -2,52 +2,50 @@ package com.TechLend.backend.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.AuthenticationProvider;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-
-import com.TechLend.backend.service.CustomUserDetailsService;
+// 1. IMPORTANTE: Agregar esta importación
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
-    private final UserDetailsService userDetailsService;
+    // 2. IMPORTANTE: Inyectar el filtro JWT que creaste
+    private final JwtAuthenticationFilter jwtAuthFilter;
 
-    public SecurityConfig(UserDetailsService userDetailsService) {
-        this.userDetailsService = userDetailsService;
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthFilter) {
+        this.jwtAuthFilter = jwtAuthFilter;
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(AbstractHttpConfigurer::disable)
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**").permitAll()
-                
-                // Endpoints expuestos[cite: 2]
-                .requestMatchers(HttpMethod.GET, "/api/equipos").hasAnyRole("SOLICITANTE", "ENCARGADO", "ADMINISTRADOR")
-                .requestMatchers(HttpMethod.POST, "/api/prestamos").hasRole("SOLICITANTE")
-                .requestMatchers(HttpMethod.PUT, "/api/prestamos/*/aprobar").hasRole("ENCARGADO")
-                .requestMatchers(HttpMethod.PUT, "/api/prestamos/*/devolucion").hasRole("ENCARGADO")
-                .requestMatchers(HttpMethod.GET, "/api/usuarios/*/historial").hasAnyRole("SOLICITANTE", "ADMINISTRADOR")
-                .requestMatchers(HttpMethod.GET, "/api/reportes/rotacion").hasRole("ADMINISTRADOR")
-                
-                .anyRequest().authenticated()
-            )
+            .csrf(csrf -> csrf.disable())
+            .cors(cors -> cors.configurationSource(request -> {
+                CorsConfiguration conf = new CorsConfiguration();
+                conf.setAllowedOrigins(List.of("*"));
+                conf.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+                conf.setAllowedHeaders(List.of("*"));
+                return conf;
+            }))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .httpBasic(Customizer.withDefaults());
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/api/auth/**").permitAll() // Login público
+                .requestMatchers("/api/equipos/**").hasAnyAuthority("Solicitante", "Encargado", "Administrador")
+                .requestMatchers("/api/prestamos/aprobar", "/api/prestamos/devolucion", "/api/prestamos/entrega").hasAuthority("Encargado")
+                .requestMatchers("/api/admin/**", "/api/reportes/**", "/api/sanciones/**").hasAuthority("Administrador")
+                .anyRequest().authenticated()
+            ) // 3. IMPORTANTE: Se eliminó el punto y coma (;) que estaba aquí
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -55,14 +53,6 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
-    }
-
-    @Bean
-    public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-        provider.setUserDetailsService(userDetailsService);
-        provider.setPasswordEncoder(passwordEncoder());
-        return provider;
     }
 
     @Bean

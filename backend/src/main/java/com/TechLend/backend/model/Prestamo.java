@@ -1,29 +1,44 @@
 package com.TechLend.backend.model;
+
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;
 
-import com.TechLend.backend.model.enums.EstadoPrestamo;
-
 @Data
 @Entity
-@Table(name = "prestamos")
+@Table(name = "prestamo")
 public class Prestamo {
+    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private LocalDateTime fechaSolicitud;
-    private LocalDateTime fechaEntrega;
-    private LocalDateTime fechaDevolucionPrevista;
-
-    @Enumerated(EnumType.STRING)
-    private EstadoPrestamo estado;
-
-    @ManyToOne
-    @JoinColumn(name = "solicitante_id")
-    private Usuario solicitante;
-
+    
+    @Column(name = "codigo_solicitud")
+    private String codigoSolicitud;
+    
     @ManyToOne
     @JoinColumn(name = "equipo_id")
     private Equipo equipo;
+    
+    @ManyToOne
+    @JoinColumn(name = "usuario_id")
+    private Usuario usuario;
+    
+    @Column(name = "fecha_solicitud")
+    private LocalDateTime fechaSolicitud;
+    
+    // Agregamos la fecha de entrega
+    @Column(name = "fecha_entrega")
+    private LocalDateTime fechaEntrega;
+    
+    @Column(name = "fecha_devolucion_prevista")
+    private LocalDateTime fechaDevolucionPrevista;
+    
+    // Agregamos la fecha de devolución real que faltaba
+    @Column(name = "fecha_devolucion_real")
+    private LocalDateTime fechaDevolucionReal;
+    
+    private String motivo;
+    
+    private String estado; 
 }

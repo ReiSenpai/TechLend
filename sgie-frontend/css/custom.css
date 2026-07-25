@@ -1,0 +1,62 @@
+/* Importación de fuentes institucionales */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* Variables base */
+:root {
+  --utp-red: #8b0000;
+  --bg-main: #f4f4f6;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-main);
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+/* Personalización del Scrollbar (Estilo moderno y delgado) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+*:hover {
+  scrollbar-color: #d1d5db transparent; /* El scrollbar se hace visible al hacer hover */
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 10px;
+}
+
+*:hover::-webkit-scrollbar-thumb {
+  background-color: #d1d5db;
+}
+
+/* Utilidades para los Tabs (Encargado) */
+.tab-content {
+  display: none;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}

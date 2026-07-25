@@ -1,27 +1,54 @@
 package com.TechLend.backend.controller;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 
-import com.TechLend.backend.model.enums.EstadoEquipo;
+import com.TechLend.backend.model.Equipo;
 import com.TechLend.backend.repository.EquipoRepository;
-
-
+import org.springframework.web.bind.annotation.*;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/equipos")
+@CrossOrigin("*")
 public class EquipoRestController {
 
-    private final EquipoRepository equipoRepository;
+    private final EquipoRepository repository;
 
-    public EquipoRestController(EquipoRepository equipoRepository) {
-        this.equipoRepository = equipoRepository;
+    public EquipoRestController(EquipoRepository repository) {
+        this.repository = repository;
     }
 
-    @GetMapping // GET /api/equipos?estado=disponible[cite: 2]
-    public ResponseEntity<?> listarEquipos(@RequestParam(required = false) String estado) {
-        if ("disponible".equalsIgnoreCase(estado)) {
-            return ResponseEntity.ok(equipoRepository.findByEstadoActual(EstadoEquipo.DISPONIBLE));
+    // Endpoint para Administrador (Todos los equipos)
+    @GetMapping
+    public List<Equipo> getAll() {
+        return repository.findAll();
+    }
+
+    // Endpoint para Solicitante (Filtrado para el catálogo)
+    @GetMapping("/disponibles")
+    public List<Equipo> getDisponibles(@RequestParam(required = false) String categoria) {
+        if (categoria != null && !categoria.equals("Todos")) {
+            // Requiere método en Repository: findByEstadoAndCategoria
+            return repository.findByEstadoAndCategoria("Disponible", categoria);
         }
-        return ResponseEntity.ok(equipoRepository.findAll());
+        // Requiere método en Repository: findByEstado
+        return repository.findByEstado("Disponible");
+    }
+    // NUEVO: Endpoint para registrar un equipo desde el formulario
+    @PostMapping
+    public Equipo crearEquipo(@RequestBody Equipo equipo) {
+        // Por defecto, todo equipo nuevo entra como "Disponible"
+        if(equipo.getEstadoActual() == null) {
+            equipo.setEstadoActual("Disponible");
+        }
+        return repository.save(equipo);
+    }
+    @PutMapping("/{id}")
+    public Equipo actualizarEquipo(@PathVariable Long id, @RequestBody Equipo equipoActualizado) {
+        Equipo equipoExistente = repository.findById(id).orElseThrow();
+        equipoExistente.setCodigoPatrimonial(equipoActualizado.getCodigoPatrimonial());
+        equipoExistente.setTipo(equipoActualizado.getTipo());
+        equipoExistente.setMarcaModelo(equipoActualizado.getMarcaModelo());
+        equipoExistente.setCategoria(equipoActualizado.getCategoria());
+        equipoExistente.setEstadoActual(equipoActualizado.getEstadoActual()); // Permite cambiar estado
+        return repository.save(equipoExistente);
     }
 }

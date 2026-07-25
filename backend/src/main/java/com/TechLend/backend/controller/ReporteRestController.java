@@ -1,27 +1,26 @@
 package com.TechLend.backend.controller;
 
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import com.TechLend.backend.repository.PrestamoRepository;
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/reportes")
+@CrossOrigin("*")
 public class ReporteRestController {
 
-    private final PrestamoRepository prestamoRepository;
-
-    public ReporteRestController(PrestamoRepository prestamoRepository) {
-        this.prestamoRepository = prestamoRepository;
-    }
-
-    @GetMapping("/reportes/rotacion") // GET /api/reportes/rotacion[cite: 2]
-    public ResponseEntity<?> generarReporteRotacion() {
-        return ResponseEntity.ok("Reporte de rotación generado");
-    }
-    
-    @GetMapping("/usuarios/{id}/historial") // GET /api/usuarios/{id}/historial[cite: 2]
-    public ResponseEntity<?> consultarHistorial(@PathVariable Long id) {
-        return ResponseEntity.ok(prestamoRepository.findBySolicitanteId(id));
+    // Simula los KPIs OLAP basándose en tu diseño React
+    @GetMapping("/dashboard")
+    public Map<String, Object> getOlapMetrics() {
+        Map<String, Object> metrics = new HashMap<>();
+        metrics.put("rotacionPromedio", "4.2×");
+        metrics.put("disponibilidadActual", "84%");
+        metrics.put("tasaRetraso", "12%");
+        metrics.put("duracionPromedio", "3.8d");
+        
+        // Aquí podrías agregar las listas `DEMAND_DATA` y `MONTHLY_DATA` de tu React
+        // metrics.put("demandaCategorias", ...);
+        
+        return metrics;
     }
 }

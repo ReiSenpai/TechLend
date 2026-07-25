@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SGIE - Inventario Patrimonial</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = { theme: { extend: { colors: { utpRed: '#8b0000', bgMain: '#F4F4F6' } } } }
+    </script>
+    <style>body { font-family: 'Inter', sans-serif; }</style>
+</head>
+<body class="flex h-screen bg-bgMain text-gray-800 overflow-hidden">
+
+    <!-- Sidebar Admin -->
+    <nav class="w-52 xl:w-56 bg-white border-r border-gray-200 flex-shrink-0 p-4 flex flex-col">
+        <div class="flex items-center gap-2 mb-8 px-2">
+            <div class="w-7 h-7 bg-utpRed rounded-md flex items-center justify-center"><span class="text-white font-bold text-xs">::</span></div>
+            <span class="font-bold text-gray-900 text-sm">SGIE Admin</span>
+        </div>
+        <div class="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-3 px-3">Módulos</div>
+        
+        <a href="admin-inventario.html" class="w-full flex items-start gap-3 px-3 py-2.5 rounded-xl transition-colors mb-1 text-left bg-utpRed text-white">
+            <span class="mt-0.5">📦</span>
+            <div>
+                <div class="text-xs font-semibold">Inventario</div>
+                <div class="text-[10px] text-red-200 mt-0.5" id="sidebar-total">0 equipos</div>
+            </div>
+        </a>
+        <a href="admin-sanciones.html" class="w-full flex items-start gap-3 px-3 py-2.5 rounded-xl transition-colors mb-1 text-left text-gray-600 hover:bg-gray-100">
+            <span class="mt-0.5 text-gray-400">⚠️</span>
+            <div><div class="text-xs font-semibold">Sanciones</div></div>
+        </a>
+        <a href="admin-reportes.html" class="w-full flex items-start gap-3 px-3 py-2.5 rounded-xl transition-colors mb-1 text-left text-gray-600 hover:bg-gray-100">
+            <span class="mt-0.5 text-gray-400">📊</span>
+            <div><div class="text-xs font-semibold">Reportes OLAP</div></div>
+        </a>
+    </nav>
+
+    <!-- Contenido Principal -->
+    <div class="flex-1 flex flex-col min-h-0 overflow-hidden">
+        <header class="h-14 bg-white border-b border-gray-200 flex items-center px-6 justify-end flex-shrink-0">
+            <div class="flex items-center gap-2">
+                <div class="w-7 h-7 bg-utpRed rounded-full flex items-center justify-center text-white text-[10px] font-bold">AD</div>
+                <span class="text-xs font-semibold text-gray-800" id="user-name">Administrador</span>
+                <button onclick="logout()" class="ml-4 text-xs text-gray-400 hover:text-gray-700 font-bold">Salir</button>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-auto p-6">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h1 class="text-xl font-bold text-gray-900">Inventario Patrimonial</h1>
+                    <p class="text-sm text-gray-500 mt-0.5">Gestión completa del patrimonio tecnológico</p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="exportarCSV()" class="px-4 py-2 text-sm text-gray-600 border border-gray-200 bg-white rounded-xl hover:bg-gray-50">Exportar CSV</button>
+                    <button onclick="abrirModalRegistro()" class="px-4 py-2 bg-utpRed text-white text-sm font-semibold rounded-xl hover:bg-[#6e0000]">+ Registrar equipo</button>
+                </div>
+            </div>
+
+            <!-- KPIs -->
+            <div class="grid grid-cols-4 gap-3 mb-5">
+                <div class="bg-white rounded-2xl border border-gray-100 p-4">
+                    <div class="text-2xl font-bold text-gray-900" id="kpi-total">0</div>
+                    <div class="text-xs text-gray-500 mt-1">Total registrados</div>
+                </div>
+                <div class="bg-white rounded-2xl border border-gray-100 p-4">
+                    <div class="text-2xl font-bold text-emerald-600" id="kpi-disponibles">0</div>
+                    <div class="text-xs text-gray-500 mt-1">Disponibles</div>
+                </div>
+                <div class="bg-white rounded-2xl border border-gray-100 p-4">
+                    <div class="text-2xl font-bold text-amber-600" id="kpi-uso">0</div>
+                    <div class="text-xs text-gray-500 mt-1">En uso</div>
+                </div>
+                <div class="bg-white rounded-2xl border border-gray-100 p-4">
+                    <div class="text-2xl font-bold text-red-600" id="kpi-fuera">0</div>
+                    <div class="text-xs text-gray-500 mt-1">Fuera de servicio</div>
+                </div>
+            </div>
+
+            <!-- Tabla -->
+            <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-50/50">
+                            <tr>
+                                <th class="text-left px-4 py-3 text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Código</th>
+                                <th class="text-left px-4 py-3 text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Equipo</th>
+                                <th class="text-left px-4 py-3 text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Categoría</th>
+                                <th class="text-left px-4 py-3 text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Estado</th>
+                                <th class="text-left px-4 py-3 text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-inventario">
+                            <tr><td colspan="5" class="px-4 py-8 text-center text-gray-400">Cargando datos...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal: Registro / Edición -->
+    <div id="modal-form" class="fixed inset-0 bg-gray-900/50 hidden flex items-center justify-center z-50">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                <h3 class="font-bold text-gray-900" id="modal-title">Registrar Equipo</h3>
+                <button onclick="cerrarModalForm()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
+            </div>
+            <form id="form-equipo" class="p-6 space-y-4">
+                <input type="hidden" id="equipoId">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Código Patrimonial</label>
+                    <input type="text" id="codigoPatrimonial" required class="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Tipo (Ej: Laptop)</label>
+                    <input type="text" id="tipo" required class="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Marca y Modelo</label>
+                    <input type="text" id="marcaModelo" required class="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Categoría</label>
+                    <select id="categoriaId" class="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm">
+                        <option value="1">1 - Laptops</option>
+                        <option value="2">2 - Proyectores</option>
+                        <option value="3">3 - Tablets</option>
+                        <option value="4">4 - Cámaras</option>
+                        <option value="5">5 - Kits Arduino</option>
+                    </select>
+                </div>
+                <div id="div-estado" class="hidden">
+                    <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Estado</label>
+                    <select id="estadoActual" class="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm">
+                        <option value="Disponible">Disponible</option>
+                        <option value="Prestado">Prestado</option>
+                        <option value="En mantenimiento">En mantenimiento</option>
+                        <option value="De baja">De baja</option>
+                    </select>
+                </div>
+                <div class="pt-4 flex justify-end gap-3">
+                    <button type="button" onclick="cerrarModalForm()" class="px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded-lg">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 text-sm text-white bg-utpRed rounded-lg">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Historial -->
+    <div id="modal-historial" class="fixed inset-0 bg-gray-900/50 hidden flex items-center justify-center z-50">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                <h3 class="font-bold text-gray-900">Historial de Préstamos</h3>
+                <button onclick="cerrarModalHistorial()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
+            </div>
+            <div class="p-6 max-h-96 overflow-y-auto">
+                <table class="w-full text-sm text-left">
+                    <thead class="bg-gray-50 text-xs uppercase text-gray-500">
+                        <tr>
+                            <th class="px-4 py-2">Fecha Solicitud</th>
+                            <th class="px-4 py-2">Solicitante</th>
+                            <th class="px-4 py-2">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-historial" class="divide-y divide-gray-100">
+                        <!-- JS inyecta datos -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script>
+        let equiposGlobal = [];
+        const STATUS_CONFIG = {
+            'Disponible': { color: 'text-emerald-700', bg: 'bg-emerald-50', dot: 'bg-emerald-500' },
+            'Prestado': { color: 'text-amber-700', bg: 'bg-amber-50', dot: 'bg-amber-500' },
+            'En mantenimiento': { color: 'text-blue-700', bg: 'bg-blue-50', dot: 'bg-blue-500' },
+            'De baja': { color: 'text-red-700', bg: 'bg-red-50', dot: 'bg-red-500' }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const nombre = localStorage.getItem('nombres');
+            if(nombre) document.getElementById('user-name').textContent = nombre.split(' ')[0];
+            cargarInventario();
+        });
+
+        async function cargarInventario() {
+            const equipos = await apiFetch('/equipos');
+            if (!equipos) return;
+            equiposGlobal = equipos;
+
+            document.getElementById('kpi-total').textContent = equipos.length;
+            document.getElementById('sidebar-total').textContent = `${equipos.length} equipos`;
+            document.getElementById('kpi-disponibles').textContent = equipos.filter(e => e.estadoActual === 'Disponible').length;
+            document.getElementById('kpi-uso').textContent = equipos.filter(e => e.estadoActual === 'Prestado').length;
+            document.getElementById('kpi-fuera').textContent = equipos.filter(e => ['De baja', 'En mantenimiento'].includes(e.estadoActual)).length;
+
+            const tbody = document.getElementById('tabla-inventario');
+            tbody.innerHTML = equipos.map(eq => {
+                const cfg = STATUS_CONFIG[eq.estadoActual] || { color: 'text-gray-700', bg: 'bg-gray-100', dot: 'bg-gray-500' };
+                return `
+                    <tr class="border-b border-gray-50 hover:bg-gray-50/50">
+                        <td class="px-4 py-3 font-mono text-xs">${eq.codigoPatrimonial}</td>
+                        <td class="px-4 py-3"><div class="font-medium">${eq.marcaModelo}</div><div class="text-[10px] text-gray-500">${eq.tipo}</div></td>
+                        <td class="px-4 py-3"><span class="text-xs bg-gray-100 px-2 py-1 rounded-lg">${eq.categoria ? eq.categoria.nombre : ''}</span></td>
+                        <td class="px-4 py-3"><span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${cfg.color} ${cfg.bg}"><span class="w-1.5 h-1.5 rounded-full ${cfg.dot}"></span>${eq.estadoActual}</span></td>
+                        <td class="px-4 py-3 flex gap-3">
+                            <button onclick="abrirModalEditar(${eq.id})" class="text-xs text-utpRed font-medium hover:underline">Editar</button>
+                            <button onclick="verHistorial(${eq.id})" class="text-xs text-gray-500 hover:underline">Historial</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // --- Lógica del Formulario (Crear y Editar) ---
+        function abrirModalRegistro() {
+            document.getElementById('form-equipo').reset();
+            document.getElementById('equipoId').value = '';
+            document.getElementById('modal-title').textContent = 'Registrar Nuevo Equipo';
+            document.getElementById('div-estado').classList.add('hidden'); // Ocultar selector de estado al crear
+            document.getElementById('modal-form').classList.remove('hidden');
+        }
+
+        function abrirModalEditar(id) {
+            const equipo = equiposGlobal.find(e => e.id === id);
+            if(!equipo) return;
+            
+            document.getElementById('equipoId').value = equipo.id;
+            document.getElementById('codigoPatrimonial').value = equipo.codigoPatrimonial;
+            document.getElementById('tipo').value = equipo.tipo;
+            document.getElementById('marcaModelo').value = equipo.marcaModelo;
+            document.getElementById('categoriaId').value = equipo.categoria ? equipo.categoria.id : 1;
+            
+            document.getElementById('estadoActual').value = equipo.estadoActual;
+            document.getElementById('div-estado').classList.remove('hidden'); // Mostrar selector de estado al editar
+            
+            document.getElementById('modal-title').textContent = 'Editar Equipo';
+            document.getElementById('modal-form').classList.remove('hidden');
+        }
+
+        function cerrarModalForm() { document.getElementById('modal-form').classList.add('hidden'); }
+
+        document.getElementById('form-equipo').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('equipoId').value;
+            const payload = {
+                codigoPatrimonial: document.getElementById('codigoPatrimonial').value,
+                tipo: document.getElementById('tipo').value,
+                marcaModelo: document.getElementById('marcaModelo').value,
+                categoria: { id: parseInt(document.getElementById('categoriaId').value) }
+            };
+
+            // Si es edición, tomamos el estado del select. Si es nuevo, forzamos "Disponible"
+            if (id) { payload.estadoActual = document.getElementById('estadoActual').value; }
+            else { payload.estadoActual = "Disponible"; }
+
+            try {
+                await apiFetch(id ? `/equipos/${id}` : `/equipos`, {
+                    method: id ? 'PUT' : 'POST',
+                    body: JSON.stringify(payload)
+                });
+                alert(id ? 'Equipo actualizado' : 'Equipo registrado');
+                cerrarModalForm();
+                cargarInventario();
+            } catch (error) { alert('Error: ' + error.message); }
+        });
+
+        // --- Lógica del Historial ---
+        async function verHistorial(equipoId) {
+            try {
+                const prestamos = await apiFetch(`/prestamos/equipo/${equipoId}`);
+                const tbody = document.getElementById('tabla-historial');
+                
+                if(!prestamos || prestamos.length === 0){
+                    tbody.innerHTML = `<tr><td colspan="3" class="px-4 py-6 text-center text-gray-500">Este equipo nunca ha sido prestado.</td></tr>`;
+                } else {
+                    tbody.innerHTML = prestamos.map(p => `
+                        <tr>
+                            <td class="px-4 py-3">${new Date(p.fechaSolicitud).toLocaleDateString()}</td>
+                            <td class="px-4 py-3">${p.usuario.nombres}</td>
+                            <td class="px-4 py-3"><span class="px-2 py-1 bg-gray-100 rounded-lg text-xs">${p.estado}</span></td>
+                        </tr>
+                    `).join('');
+                }
+                document.getElementById('modal-historial').classList.remove('hidden');
+            } catch (error) { alert('Error al cargar historial: ' + error.message); }
+        }
+        function cerrarModalHistorial() { document.getElementById('modal-historial').classList.add('hidden'); }
+
+        function exportarCSV() {
+            if(equiposGlobal.length === 0) return alert('No hay datos');
+            let csv = "Codigo,Tipo,Marca_Modelo,Categoria,Estado\n";
+            equiposGlobal.forEach(eq => { csv += `${eq.codigoPatrimonial},${eq.tipo},${eq.marcaModelo},${eq.categoria?eq.categoria.nombre:''},${eq.estadoActual}\n`; });
+            const a = document.createElement('a');
+            a.href = window.URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+            a.download = 'inventario_fise.csv';
+            a.click();
+        }
+
+        function logout() { localStorage.clear(); window.location.href = 'index.html'; }
+    </script>
+</body>
+</html>
